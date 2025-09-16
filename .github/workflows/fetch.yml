@@ -1,0 +1,36 @@
+name: Fetch Strava Data
+
+on:
+  schedule:
+    - cron: "0 5 * * *"   # codziennie o 7:00 PL (latem, UTC+2)
+  workflow_dispatch:       # pozwala uruchomić ręcznie z GitHub Actions
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run script
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
+        run: python strava_fetch_detailed.py
+
+      - name: Commit updated CSV
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/strava_activities_detailed.csv
+          git commit -m "Update Strava data (automated)" || echo "No changes to commit"
+          git push
